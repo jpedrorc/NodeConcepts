@@ -14,7 +14,7 @@ function alreadyExistsUserAccount(request, response, next) {
     return user.name === request.body.name;
   });
   if (alreadyExist) {
-    return response.send("Usuário já xistente na base de dados.");
+    return response.send("Usuário já existente na base de dados.");
   }
   next();
 }
@@ -37,7 +37,6 @@ app.post("/users", alreadyExistsUserAccount, (request, response) => {
     todos: [],
   };
   users.push(newUser);
-  console.log(`Usuário ${newUser.name} criado com sucesso.`);
   response.status(200).send(`Usuário ${newUser.name} criado com sucesso.`);
 });
 
@@ -81,7 +80,7 @@ app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   for (let i = 0; i < users.length; i++) {
-    if (users[i].username === username) {
+    if (users[i].username === request.headers.username) {
       const taskList = users[i].todos.find((task, j) => {
         if (task.id === request.params.id) {
           users[i].todos[j].done = true;
@@ -94,9 +93,14 @@ app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
 
 app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
   for (let i = 0; i < users.length; i++) {
-    if (users[i].id === request.params.id) {
-      users.slice(i, 1);
-      response.status(200).send("Usuário apagado com sucesso!");
+    if (users[i].username === request.headers.username) {
+      for (let j = 0; j < users[i].todos.length; j++) {
+        const newTodos = users[i].todos.filter((task) => {
+          return task.id !== request.params.id;
+        });
+        users[i].todos = newTodos;
+        response.status(200).send("Task apagada com sucesso!");
+      }
     }
   }
 });
