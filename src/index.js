@@ -24,9 +24,9 @@ function checksExistsUserAccount(request, response, next) {
     if (users[i].name === request.name) {
       return true;
     }
+    next();
   }
   return false;
-  next();
 }
 
 app.post("/users", alreadyExistsUserAccount, (request, response) => {
@@ -37,28 +37,68 @@ app.post("/users", alreadyExistsUserAccount, (request, response) => {
     todos: [],
   };
   users.push(newUser);
-  return response.send(`Usuário ${newUser.name} criado com sucesso.`);
+  console.log(`Usuário ${newUser.name} criado com sucesso.`);
+  response.status(200).send(`Usuário ${newUser.name} criado com sucesso.`);
 });
 
 app.get("/todos", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
-  return response.send(users);
+  const user = users.find((user) => user.username === request.headers.username);
+  response.status(200).send(user);
 });
 
 app.post("/todos", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const newTask = {
+    id: v4(),
+    title: request.body.title,
+    done: false,
+    deadline: new Date(request.body.deadline),
+    created_at: new Date(),
+  };
+
+  const userData = users.find((user, i) => {
+    if (user.name === request.headers.name) {
+      users[i].todos.push(newTask);
+      response.status(200).send("Task incluida com sucesso!");
+    }
+  });
 });
 
 app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { title, deadline } = request.body;
+  const username = request.headers.username;
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].username === username) {
+      const taskList = users[i].todos.find((task, j) => {
+        if (task.id === request.params.id) {
+          users[i].todos[j].title = title;
+          users[i].todos[j].deadline = deadline;
+          response.status(200).send("Dados atualizados com sucesso");
+        }
+      });
+    }
+  }
 });
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].username === username) {
+      const taskList = users[i].todos.find((task, j) => {
+        if (task.id === request.params.id) {
+          users[i].todos[j].done = true;
+          response.status(200).send("Status done alterado com sucesso!");
+        }
+      });
+    }
+  }
 });
 
 app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  for (let i = 0; i < users.length; i++) {
+    if (users[i].id === request.params.id) {
+      users.slice(i, 1);
+      response.status(200).send("Usuário apagado com sucesso!");
+    }
+  }
 });
 
 module.exports = app;
