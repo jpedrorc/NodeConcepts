@@ -11,22 +11,27 @@ const users = [];
 
 function alreadyExistsUserAccount(request, response, next) {
   const alreadyExist = users.find((user) => {
-    return user.name === request.body.name;
+    return user.username === request.body.username;
   });
   if (alreadyExist) {
-    return response.send("Usuário já existente na base de dados.");
+    return response.status(400).send({
+      error: "User already exist",
+    });
   }
   next();
 }
 
 function checksExistsUserAccount(request, response, next) {
   for (let i = 0; i < users.length; i++) {
-    if (users[i].name === request.name) {
-      return true;
+    if (users[i].username === request.headers.username) {
+      response.locals.user = users[i];
+      next();
+      return;
     }
-    next();
   }
-  return false;
+  return response.status(404).send({
+    error: "User not found",
+  });
 }
 
 app.post("/users", alreadyExistsUserAccount, (request, response) => {
@@ -37,12 +42,11 @@ app.post("/users", alreadyExistsUserAccount, (request, response) => {
     todos: [],
   };
   users.push(newUser);
-  response.status(200).send(`Usuário ${newUser.name} criado com sucesso.`);
+  response.status(201).send(newUser);
 });
 
 app.get("/todos", checksExistsUserAccount, (request, response) => {
-  const user = users.find((user) => user.username === request.headers.username);
-  response.status(200).send(user);
+  response.status(200).send(response.locals.user.todos);
 });
 
 app.post("/todos", checksExistsUserAccount, (request, response) => {
@@ -57,7 +61,7 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
   const userData = users.find((user, i) => {
     if (user.name === request.headers.name) {
       users[i].todos.push(newTask);
-      response.status(200).send("Task incluida com sucesso!");
+      return response.status(201).send("Task incluida com sucesso!");
     }
   });
 });
